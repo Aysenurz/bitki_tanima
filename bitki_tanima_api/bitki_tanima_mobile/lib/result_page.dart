@@ -1,19 +1,38 @@
 // lib/result_page.dart
-import 'dart:convert';
-import 'dart:io' show File; // Sadece File sınıfı için import
-import 'dart:ui';
+//
+// 🔧 Bu sürümde yapılanlar:
+// - AppBar'daki eski _FavoriteButton kaldırıldı (sadece savedAt yazıyordu).
+// - Yerine, tüm sonucu Firestore'a eksiksiz kaydeden _saveToFavorites() eklendi.
+// - 'saved_at' alan adı standartlaştırıldı (FavoritesService ile uyumlu).
+// - Çifte import (kIsWeb) düzeltildi.
+// - Anlaşılır Türkçe yorumlar eklendi.
+
+import 'dart:async'; // TimeoutException için
+import 'dart:convert'; // jsonDecode
+import 'dart:io' show File; // Mobilde fotoğrafı göstermek için
+import 'dart:ui'; // BackdropFilter blur
+
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // XFile için gerekli
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint; // tek satırda
+import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show kIsWeb; // Web kontrolü için
+
+// NOT: Cloud Firestore'ı burada direkt kullanmıyoruz; favori kaydını
+// FavoritesService üzerinden yapacağız. O yüzden bu import gerekli değil.
+// import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'src/auth/auth_service.dart';
 import 'translations.dart';
+import 'config.dart';
+
+// ✅ Favori servisimiz ve model (tam veriyi kaydetmek için)
+import 'services/favorites_service.dart';
 
 class ResultPage extends StatefulWidget {
-  final XFile imageFile; // String imagePath yerine XFile nesnesi
-  final String lang;
+  final XFile imageFile; // Seçilen/çekilen fotoğraf (XFile)
+  final String lang; // 'tr' veya 'en'
+
   const ResultPage({super.key, required this.imageFile, required this.lang});
 
   @override
@@ -21,28 +40,29 @@ class ResultPage extends StatefulWidget {
 }
 
 class _ResultPageState extends State<ResultPage> {
-  bool loading = true;
-  String error = "";
-  Map<String, dynamic>? data;
-  List<String> extraImages = [];
+  bool loading = true; // Ekranda loader göstermek için
+  String error = ""; // Hata mesajı (varsa)
+  Map<String, dynamic>? data; // API'den gelen JSON
+  List<String> extraImages = []; // Ek görseller (grid için)
 
   @override
   void initState() {
     super.initState();
-    _sendImage();
+    _sendImage(); // Sayfa açılır açılmaz fotoğrafı API'ye yollarız
   }
 
+  // 📡 Fotoğrafı FastAPI /predict'e gönderir
   Future<void> _sendImage() async {
-    final apiUrl = Uri.parse(
-      "http://192.168.1.37:8000/predict",
-    ); // kendi IP adresinizi kontrol edin
+    final apiUrl = Uri.parse('${AppConfig.apiBase}/predict');
+    debugPrint('API URL => $apiUrl');
+
     try {
-      final req = http.MultipartRequest('POST', apiUrl);
-      req.fields['organ'] = 'leaf';
-      req.fields['lang'] = widget.lang;
+      final req = http.MultipartRequest('POST', apiUrl)
+        ..fields['organ'] = 'leaf'
+        ..fields['lang'] = widget.lang;
 
       if (kIsWeb) {
-        // Web için: Dosyayı bayt olarak okuyup gönderiyoruz
+        // Web: XFile -> bytes
         final bytes = await widget.imageFile.readAsBytes();
         req.files.add(
           http.MultipartFile.fromBytes(
@@ -52,27 +72,36 @@ class _ResultPageState extends State<ResultPage> {
           ),
         );
       } else {
-        // Mobil için: Dosya yolundan gönderiyoruz
+        // Android/iOS: dosya yolundan ekle
         req.files.add(
           await http.MultipartFile.fromPath('file', widget.imageFile.path),
         );
       }
 
-      final resp = await req.send();
+      // 10 sn zaman aşımı
+      final resp = await req.send().timeout(const Duration(seconds: 10));
       final body = await resp.stream.bytesToString();
+
       if (resp.statusCode != 200) {
-        throw Exception("API ${resp.statusCode}: $body");
+        throw Exception('API ${resp.statusCode}: $body');
       }
 
       final jsonResp = jsonDecode(body) as Map<String, dynamic>;
       setState(() {
         data = jsonResp;
         extraImages =
-            (jsonResp["extra_images"] as List?)
+            (jsonResp['extra_images'] as List?)
                 ?.map((e) => e.toString())
                 .toList() ??
             [];
         loading = false;
+        error = '';
+      });
+    } on TimeoutException {
+      setState(() {
+        loading = false;
+        error =
+            'Sunucuya ulaşılamadı (zaman aşımı). Base: ${AppConfig.apiBase}';
       });
     } catch (e) {
       setState(() {
@@ -82,6 +111,7 @@ class _ResultPageState extends State<ResultPage> {
     }
   }
 
+  // 🔑 Favori docId üretmek için (bilimsel addan slug)
   String _derivePlantId() {
     final id = (data?['plant_id'] ?? data?['id'] ?? '').toString().trim();
     if (id.isNotEmpty) return id;
@@ -89,6 +119,7 @@ class _ResultPageState extends State<ResultPage> {
     return _slugify(sci);
   }
 
+  // küçük harf, boşlukları '-' yap, alfasayısal dışını temizle
   String _slugify(String s) {
     final lowered = s.toLowerCase().trim();
     final slug = lowered
@@ -188,6 +219,7 @@ class _ResultPageState extends State<ResultPage> {
     }
   }
 
+  // 🌐 Wikipedia/POWO butonlarını akıllı yapan yardımcı
   Widget _smartLinkButton({
     required String title,
     String? primary,
@@ -247,6 +279,90 @@ class _ResultPageState extends State<ResultPage> {
     );
   }
 
+  // ❤️ Tüm sonucu Firestore'a EKLEYEN/GÜNCELLEYEN fonksiyon
+  Future<void> _saveToFavorites() async {
+    // 1) Giriş kontrolü
+    if (AuthServisi.instance.uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.lang == 'tr'
+                ? 'Lütfen önce giriş yapın'
+                : 'Please sign in first',
+          ),
+        ),
+      );
+      return;
+    }
+    if (data == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kaydedilecek sonuç verisi yok.')),
+      );
+      return;
+    }
+
+    // 2) API alanlarını oku
+    final sci = (data!['scientific_name'] ?? '').toString().trim();
+    if (sci.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bilimsel ad yok, kaydedilemedi.')),
+      );
+      return;
+    }
+    final commons =
+        (data!['common_names'] as List?)?.map((e) => e.toString()).toList() ??
+        const [];
+    final display = commons.isNotEmpty ? commons.first : sci;
+
+    final List<String> imgs =
+        (data!['extra_images'] as List?)?.map((e) => e.toString()).toList() ??
+        const [];
+    final thumb = imgs.isNotEmpty ? imgs.first : null;
+
+    final double? score = (data!['score'] is num)
+        ? (data!['score'] as num).toDouble()
+        : null;
+
+    // 3) DocId (slug)
+    final id = FavoritesService.makeIdFromScientific(sci);
+
+    // 4) Modeli doldur (FavoritesService.toMap() saved_at'i serverTimestamp ile yazar)
+    final fav = FavoritePlant(
+      id: id,
+      scientificName: sci,
+      displayName: display,
+      thumbnailUrl: thumb,
+      family: (data!['family']?.toString()),
+      score: score,
+      description: (data!['description']?.toString()),
+      care:
+          ((data!['care'] as List?)?.map((e) => e.toString()).toList()) ??
+          const [],
+      funFact: (data!['fun_fact']?.toString()),
+      wikiUrl: (data!['wikipedia_url']?.toString()),
+      powoUrl: (data!['powo_url']?.toString()),
+      extraImages: imgs,
+      // savedAt: null  // toMap içinde serverTimestamp ile otomatik
+    );
+
+    // 5) Firestore'a yaz
+    try {
+      final existed = await FavoritesService.exists(id);
+      await FavoritesService.upsert(fav);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(existed ? 'Favori güncellendi' : 'Favorilere eklendi'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Kaydedilemedi: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppTexts.values[widget.lang]!;
@@ -266,17 +382,21 @@ class _ResultPageState extends State<ResultPage> {
     final aiUsed = data?["ai_used"] == true;
     final aiError = data?["ai_error"] as String?;
 
-    final uid = AuthServisi.instance.uid;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(t["appTitle"]!),
         actions: [
-          if (!loading && error.isEmpty && data != null && uid != null)
-            _FavoriteButton(
-              uid: uid,
-              plantId: _derivePlantId(),
-              isTr: widget.lang == 'tr',
+          // ✅ Eski _FavoriteButton yerine doğrudan kaydetme butonu:
+          if (!loading &&
+              error.isEmpty &&
+              data != null &&
+              AuthServisi.instance.uid != null)
+            IconButton(
+              tooltip: widget.lang == 'tr'
+                  ? 'Favorilere ekle/güncelle'
+                  : 'Add/Update favorite',
+              icon: const Icon(Icons.favorite_border),
+              onPressed: _saveToFavorites,
             ),
         ],
       ),
@@ -286,16 +406,17 @@ class _ResultPageState extends State<ResultPage> {
           ? Center(child: Text("❌ $error"))
           : Stack(
               children: [
+                // Blur arka plan: çekilen fotoğrafı tam ekranda flu gösteriyoruz
                 if (kIsWeb)
                   Image.network(
-                    widget.imageFile.path, // Web'de Image.network
+                    widget.imageFile.path,
                     fit: BoxFit.cover,
                     height: double.infinity,
                     width: double.infinity,
                   )
                 else
                   Image.file(
-                    File(widget.imageFile.path), // Mobil'de Image.file
+                    File(widget.imageFile.path),
                     fit: BoxFit.cover,
                     height: double.infinity,
                     width: double.infinity,
@@ -304,25 +425,26 @@ class _ResultPageState extends State<ResultPage> {
                   filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: Container(color: Colors.black.withOpacity(0.35)),
                 ),
+
+                // İçerik
                 ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
+                    // Üst görsel kartı
                     ClipRRect(
                       borderRadius: BorderRadius.circular(22),
                       child: Stack(
                         children: [
                           if (kIsWeb)
                             Image.network(
-                              widget.imageFile.path, // Web'de Image.network
+                              widget.imageFile.path,
                               height: 260,
                               width: double.infinity,
                               fit: BoxFit.cover,
                             )
                           else
                             Image.file(
-                              File(
-                                widget.imageFile.path,
-                              ), // Mobil'de Image.file
+                              File(widget.imageFile.path),
                               height: 260,
                               width: double.infinity,
                               fit: BoxFit.cover,
@@ -348,6 +470,7 @@ class _ResultPageState extends State<ResultPage> {
                     ),
                     const SizedBox(height: 14),
 
+                    // Kimlik kartı
                     Card(
                       elevation: 6,
                       shape: RoundedRectangleBorder(
@@ -384,6 +507,7 @@ class _ResultPageState extends State<ResultPage> {
 
                     const SizedBox(height: 12),
 
+                    // Açıklama kartı
                     Card(
                       elevation: 4,
                       shape: RoundedRectangleBorder(
@@ -441,6 +565,7 @@ class _ResultPageState extends State<ResultPage> {
                       ),
                     ),
 
+                    // Bakım önerileri
                     if (care.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Card(
@@ -466,6 +591,7 @@ class _ResultPageState extends State<ResultPage> {
                       ),
                     ],
 
+                    // Fun fact
                     if (fun.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Card(
@@ -486,6 +612,7 @@ class _ResultPageState extends State<ResultPage> {
                       ),
                     ],
 
+                    // Ek görseller
                     if (extraImages.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Card(
@@ -525,6 +652,7 @@ class _ResultPageState extends State<ResultPage> {
 
                     const SizedBox(height: 14),
 
+                    // Dış link butonları
                     Row(
                       children: [
                         _smartLinkButton(
@@ -551,65 +679,7 @@ class _ResultPageState extends State<ResultPage> {
   }
 }
 
-/// AppBar'daki favori kalp butonu
-class _FavoriteButton extends StatelessWidget {
-  final String uid;
-  final String plantId;
-  final bool isTr;
-  const _FavoriteButton({
-    required this.uid,
-    required this.plantId,
-    required this.isTr,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final favRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('favorites')
-        .doc(plantId);
-
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: favRef.snapshots(),
-      builder: (context, snap) {
-        final isFav = snap.data?.exists == true;
-        return IconButton(
-          tooltip: isFav
-              ? (isTr ? 'Favorilerden çıkar' : 'Remove from Favorites')
-              : (isTr ? 'Favorilere ekle' : 'Add to Favorites'),
-          icon: Icon(isFav ? Icons.favorite : Icons.favorite_outline),
-          onPressed: () async {
-            if (isFav) {
-              await favRef.delete();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    isTr ? 'Favorilerden çıkarıldı' : 'Removed from favorites',
-                  ),
-                ),
-              );
-            } else {
-              await favRef.set({
-                'savedAt': FieldValue.serverTimestamp(),
-                'notesCount': 0,
-              }, SetOptions(merge: true));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    isTr ? 'Favorilere eklendi' : 'Added to favorites',
-                  ),
-                ),
-              );
-            }
-          },
-        );
-      },
-    );
-  }
-}
-
-/// Yükleme ekranı: 20 bilgi, 6 sn’de bir değişir + sırayla büyüyüp küçülen noktalar
+// ⏳ Şık yükleme animasyonu + bilgi döndürme
 class BilgiliLoading extends StatefulWidget {
   final String lang;
   const BilgiliLoading({super.key, required this.lang});
@@ -683,6 +753,7 @@ class _BilgiliLoadingState extends State<BilgiliLoading>
   @override
   void initState() {
     super.initState();
+    // Her 6 saniyede bir bilgi değiştir
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 6));
       if (!mounted) return false;
@@ -709,6 +780,7 @@ class _BilgiliLoadingState extends State<BilgiliLoading>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        // Dairesel noktalar animasyonu
         AnimatedBuilder(
           animation: _controller,
           builder: (_, __) {
@@ -741,6 +813,7 @@ class _BilgiliLoadingState extends State<BilgiliLoading>
           },
         ),
         const SizedBox(height: 20),
+        // Bilgi metni
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
