@@ -1,10 +1,8 @@
-# api.py
-# -----------------------------------------------------------
+
 # FastAPI tabanlı tek dosya backend:
 # - /diag   : .env okundu mu? hedef URL ne? hızlı teşhis
 # - /predict: resmi Pl@ntNet'e yollar, sonucu sadeleştirir,
 #             (varsa) OpenAI ile açıklama/bakım notu ekler.
-# -----------------------------------------------------------
 
 import os, json, re, requests
 from typing import Dict, Any, List, Optional
@@ -13,7 +11,6 @@ from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-# ⬇⬇⬇  YENİ: .env'yi bu dosyayla AYNI klasörden, ezerek yükle
 from pathlib import Path
 from dotenv import load_dotenv
 #ENV_PATH = Path(__file__).with_name(".env")

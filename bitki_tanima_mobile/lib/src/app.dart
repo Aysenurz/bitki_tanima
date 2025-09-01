@@ -1,21 +1,27 @@
-// lib/src/app.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../home_page.dart';
-import '../translations.dart';
-import '../language_selection_page.dart';
-import '../plant_detail_page.dart'; // Favorilerden detay için gerekli
-import 'auth/giris_sayfasi.dart';
-import 'auth/auth_service.dart';
+import '../translations.dart'; // Uygulama metinlerinin çevirileri burada.
+import '../language_selection_page.dart'; // Dil seçme sayfası.
+import 'auth/giris_sayfasi.dart'; // Giriş sayfası.
+import 'auth/auth_service.dart'; // Kimlik doğrulama işlemleri servisi.
 
-/// Auth durumunu tüm uygulamaya sağlayan kök widget
+// ✅ Notlar sayfası
+import '../notes/notes_page.dart';
+
+/// Uygulamanın en üst düzey (kök) widget'ı.
+/// Bu widget, Firebase kimlik doğrulama durumunu (oturum açmış mı, açmamış mı?)
+/// dinler ve bu bilgiyi tüm alt widget'lara sağlar (Provider kullanarak).
 class MyRoot extends StatelessWidget {
   const MyRoot({super.key});
   @override
   Widget build(BuildContext context) {
+    // StreamProvider, FirebaseAuth'ın auth durumundaki değişiklikleri dinler.
+    // 'value' olarak, authStateChanges() Stream'ini veririz.
+    // 'initialData' olarak, uygulamanın başladığı andaki mevcut kullanıcıyı (varsa) veririz.
+    // Bu sayede, alt widget'lar her an kullanıcı durumuna erişebilir.
     return StreamProvider<User?>.value(
       value: FirebaseAuth.instance.authStateChanges(),
       initialData: FirebaseAuth.instance.currentUser,
@@ -24,6 +30,9 @@ class MyRoot extends StatelessWidget {
   }
 }
 
+/// Uygulamanın ana widget'ı.
+/// Bu widget, kullanıcının durumuna (oturum açmış mı, dil seçmiş mi?) göre
+/// hangi sayfanın gösterileceğine karar verir.
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
   @override
@@ -31,22 +40,27 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  // Uygulamanın mevcut dilini tutan değişken.
   String? lang;
+  // Dili değiştiren ve arayüzü yeniden çizen metot.
   void changeLang(String newLang) => setState(() => lang = newLang);
 
   @override
   Widget build(BuildContext context) {
+    // Provider'ı kullanarak kullanıcının durumunu (User nesnesi) dinliyoruz.
     final user = context.watch<User?>();
 
+    // Uygulama başlığını seçilen dile göre alıyoruz.
     final String title =
         AppTexts.values[lang ?? "tr"]?["appTitle"] ?? "Bitki Tanıma";
 
-    // 1) Dil seçimi yoksa
+    // 1) Dil seçimi henüz yapılmadıysa
     if (lang == null) {
       return MaterialApp(
         title: title,
         debugShowCheckedModeBanner: false,
         theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.green),
+        // Dil seçim sayfasını, üstünde AppBar olan bir kabuk içine koyuyoruz.
         home: _ShellScaffold(
           title: title,
           lang: lang ?? 'tr',
@@ -57,12 +71,13 @@ class _MyAppState extends State<MyApp> {
       );
     }
 
-    // 2) Dil seçildi; kullanıcı yoksa
+    // 2) Dil seçilmiş, ancak kullanıcı oturum açmamışsa
     if (user == null) {
       return MaterialApp(
         title: title,
         debugShowCheckedModeBanner: false,
         theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.green),
+        // Giriş sayfasını, üstünde AppBar olan bir kabuk içine koyuyoruz.
         home: _ShellScaffold(
           title: title,
           lang: lang!,
@@ -73,7 +88,8 @@ class _MyAppState extends State<MyApp> {
       );
     }
 
-    // 3) Kullanıcı var -> Tabs (alt menü)
+    // 3) Dil seçilmiş ve kullanıcı oturum açmışsa
+    // Ana uygulama arayüzünü (alt menü/sekme yapısı) gösteriyoruz.
     return MaterialApp(
       title: title,
       debugShowCheckedModeBanner: false,
@@ -83,13 +99,14 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-/// Dil/Giriş sayfaları için üstte AppBar'lı kabuk
+/// Dil/Giriş sayfaları için ortak bir AppBar'a sahip iskelet widget.
+/// Bu, kod tekrarını önler.
 class _ShellScaffold extends StatelessWidget {
   final String title;
   final String lang;
   final User? user;
   final void Function(String) onLangChanged;
-  final Widget child;
+  final Widget child; // İçine yerleştirilecek sayfa widget'ı.
 
   const _ShellScaffold({
     super.key,
@@ -107,6 +124,7 @@ class _ShellScaffold extends StatelessWidget {
       appBar: AppBar(
         title: Text(title),
         actions: [
+          // Dil seçimi için açılır menü butonu.
           PopupMenuButton<String>(
             tooltip: tr ? 'Dil' : 'Language',
             icon: const Icon(Icons.language),
@@ -116,11 +134,13 @@ class _ShellScaffold extends StatelessWidget {
               PopupMenuItem(value: 'en', child: Text('🇬🇧 English')),
             ],
           ),
+          // Eğer kullanıcı oturum açmışsa çıkış yap butonunu göster.
           if (user != null)
             IconButton(
               tooltip: tr ? 'Çıkış Yap' : 'Sign Out',
               icon: const Icon(Icons.logout),
               onPressed: () async {
+                // Çıkış yapmadan önce onay penceresi göster.
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
@@ -142,6 +162,7 @@ class _ShellScaffold extends StatelessWidget {
                     ],
                   ),
                 );
+                // Onay geldiyse AuthServisi üzerinden çıkış yap.
                 if (ok == true) await AuthServisi.instance.cikisYap();
               },
             ),
@@ -152,7 +173,8 @@ class _ShellScaffold extends StatelessWidget {
   }
 }
 
-/// Girişten sonra: Alt NavigationBar'lı ana iskelet
+/// Kullanıcı giriş yaptıktan sonra gösterilen ana iskelet.
+/// Alt kısmında sekmeler arası geçişi sağlayan NavigationBar bulunur.
 class _TabsScaffold extends StatefulWidget {
   final String lang;
   final void Function(String) onLangChanged;
@@ -167,19 +189,22 @@ class _TabsScaffold extends StatefulWidget {
 }
 
 class _TabsScaffoldState extends State<_TabsScaffold> {
+  // Hangi sekmenin seçili olduğunu tutan indeks.
   int _index = 0;
 
   @override
   Widget build(BuildContext context) {
+    // Sekmelerdeki sayfaların listesi.
     final pages = <Widget>[
       HomePage(lang: widget.lang, changeLang: widget.onLangChanged),
-      _FavoritesPage(lang: widget.lang),
+      const NotesPage(), // ✅ Favoriler yerine Notlar sayfası eklenmiş.
       _SettingsPage(lang: widget.lang, onLangChanged: widget.onLangChanged),
     ];
 
     return Scaffold(
+      // Seçili indekse göre ilgili sayfayı gösterir, diğerlerini bellekte tutar.
       body: IndexedStack(index: _index, children: pages),
-      // 🔍 FAB (arama) kaldırıldı
+      // Uygulamanın altındaki navigasyon çubuğu.
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
@@ -190,9 +215,9 @@ class _TabsScaffoldState extends State<_TabsScaffold> {
             label: 'Ana Sayfa',
           ),
           NavigationDestination(
-            icon: Icon(Icons.favorite_outline),
-            selectedIcon: Icon(Icons.favorite),
-            label: 'Favoriler',
+            icon: Icon(Icons.note_alt_outlined),
+            selectedIcon: Icon(Icons.note_alt),
+            label: 'Notlarım', // ✅ Yeni eklenen Notlar sekmesi.
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
@@ -205,169 +230,8 @@ class _TabsScaffoldState extends State<_TabsScaffold> {
   }
 }
 
-/// -------- Favoriler sekmesi: Firestore'dan liste --------
-class _FavoritesPage extends StatelessWidget {
-  final String lang;
-  const _FavoritesPage({required this.lang});
-
-  @override
-  Widget build(BuildContext context) {
-    final uid = AuthServisi.instance.uid;
-    if (uid == null) {
-      return const Scaffold(body: Center(child: Text('Giriş yapmalısınız.')));
-    }
-
-    final favCol = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('favorites')
-        .orderBy('savedAt', descending: true);
-
-    final tr = (lang == 'tr');
-
-    return Scaffold(
-      appBar: AppBar(title: Text(tr ? 'Favoriler' : 'Favorites')),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: favCol.snapshots(),
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final docs = snap.data?.docs ?? [];
-          if (docs.isEmpty) {
-            return Center(
-              child: Text(
-                tr
-                    ? 'Henüz favori bitki yok.\nSonuç ekranındaki kalp ile ekleyebilirsin.'
-                    : 'No favorites yet.\nAdd from the result page via heart.',
-                textAlign: TextAlign.center,
-              ),
-            );
-          }
-
-          return ListView.separated(
-            itemCount: docs.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, i) {
-              final fav = docs[i];
-              final plantId = fav.id;
-
-              final plantDoc = FirebaseFirestore.instance
-                  .collection('plants')
-                  .doc(plantId)
-                  .get();
-
-              return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                future: plantDoc,
-                builder: (context, pSnap) {
-                  final p = pSnap.data?.data();
-                  final nameTr = (p?['names']?['tr'] ?? plantId) as String;
-                  final nameEn = (p?['names']?['en'] ?? '') as String;
-                  final thumb = (p?['thumbnails'] as List?)
-                      ?.cast<String>()
-                      .firstOrNull;
-
-                  return ListTile(
-                    leading: thumb != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              thumb,
-                              width: 48,
-                              height: 48,
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                        : const Icon(Icons.local_florist),
-                    title: Text(
-                      lang == 'tr'
-                          ? nameTr
-                          : (nameEn.isNotEmpty ? nameEn : nameTr),
-                    ),
-                    subtitle: Text(lang == 'tr' ? nameEn : nameTr),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              PlantDetailPage(plantId: plantId, lang: lang),
-                        ),
-                      );
-                    },
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (v) async {
-                        if (v == 'note') {
-                          final note = await _editNoteDialog(
-                            context,
-                            initial: (fav.data()['note'] ?? '') as String,
-                            tr: tr,
-                          );
-                          if (note != null) {
-                            await fav.reference.set({
-                              'note': note,
-                            }, SetOptions(merge: true));
-                          }
-                        } else if (v == 'delete') {
-                          await fav.reference.delete();
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'note',
-                          child: Text(
-                            tr ? 'Not ekle/düzenle' : 'Add/Edit note',
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(tr ? 'Favoriden kaldır' : 'Remove'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  Future<String?> _editNoteDialog(
-    BuildContext context, {
-    required String initial,
-    required bool tr,
-  }) async {
-    final c = TextEditingController(text: initial);
-    return showDialog<String>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(tr ? 'Not' : 'Note'),
-        content: TextField(
-          controller: c,
-          maxLines: 4,
-          decoration: InputDecoration(
-            hintText: tr
-                ? 'Bu bitkiyle ilgili notun…'
-                : 'Your note about this plant…',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(tr ? 'İptal' : 'Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, c.text.trim()),
-            child: Text(tr ? 'Kaydet' : 'Save'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// ---- Ayarlar sekmesi (dil + çıkış) ----
+/// Bu sayfa, dil değiştirme ve çıkış yapma seçeneklerini içerir.
 class _SettingsPage extends StatelessWidget {
   final String lang;
   final void Function(String) onLangChanged;
@@ -380,6 +244,7 @@ class _SettingsPage extends StatelessWidget {
       appBar: AppBar(title: Text(tr ? 'Ayarlar' : 'Settings')),
       body: ListView(
         children: [
+          // Dil değiştirme seçeneği.
           ListTile(
             leading: const Icon(Icons.language),
             title: Text(tr ? 'Dil' : 'Language'),
@@ -396,10 +261,12 @@ class _SettingsPage extends StatelessWidget {
             ),
           ),
           const Divider(),
+          // Çıkış yapma seçeneği.
           ListTile(
             leading: const Icon(Icons.logout),
             title: Text(tr ? 'Çıkış Yap' : 'Sign Out'),
             onTap: () async {
+              // Çıkış yapmadan önce onay penceresi göster.
               final ok = await showDialog<bool>(
                 context: context,
                 builder: (_) => AlertDialog(
@@ -421,6 +288,7 @@ class _SettingsPage extends StatelessWidget {
                   ],
                 ),
               );
+              // Onay geldiyse AuthServisi üzerinden çıkış yap.
               if (ok == true) await AuthServisi.instance.cikisYap();
             },
           ),
@@ -428,8 +296,4 @@ class _SettingsPage extends StatelessWidget {
       ),
     );
   }
-}
-
-extension<T> on List<T> {
-  T? get firstOrNull => isEmpty ? null : first;
 }
