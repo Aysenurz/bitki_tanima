@@ -61,7 +61,7 @@ class _ResultPageState extends State<ResultPage> {
   /// Fotoğrafı FastAPI /predict'e gönderir.
   Future<void> _sendImage() async {
     // Geliştirme için sabit base; istersen AppConfig.apiBase kullan.
-    final base = kIsWeb ? 'http://localhost:8000' : 'http://192.168.1.50:8000';
+    final base = kIsWeb ? 'http://localhost:8000' : 'http://192.168.1.42:8000';
     final apiUrl = Uri.parse("$base/predict");
 
     try {

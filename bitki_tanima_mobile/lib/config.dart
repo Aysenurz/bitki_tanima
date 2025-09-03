@@ -17,6 +17,6 @@ class AppConfig {
     // API adresi olarak geliştirme bilgisayarının sabit IP adresini kullanıyoruz.
     // Bu adres, mobil cihazın aynı Wi-Fi ağına bağlı olması durumunda çalışır.
     // "192.168.1.44" gibi bir adres, yerel ağda bir cihaza erişmek için kullanılır.
-    return "http://192.168.1.44";
+    return "http://192.168.1.42";
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/notes_service.dart';
+// ✅ Çeviri sınıfımızı içe aktarıyoruz
+import '../translations.dart';
 
 // Not detay sayfasını gösteren bir StatefulWidget
 // Bu sayfa, bir notu düzenlemek veya görüntülemek için kullanılır.
@@ -8,9 +10,16 @@ class NoteDetailPage extends StatefulWidget {
   final String noteId;
   // Notun başlangıç metni, eğer varsa.
   final String? initialText;
+  // ✅ Dışarıdan gelen dil bilgisini tutar.
+  final String lang;
 
-  // Kurucu metodu, not ID'sini ve başlangıç metnini alır.
-  const NoteDetailPage({super.key, required this.noteId, this.initialText});
+  // Kurucu metodu, not ID'sini, başlangıç metnini ve dil bilgisini alır.
+  const NoteDetailPage({
+    super.key,
+    required this.noteId,
+    this.initialText,
+    required this.lang,
+  });
 
   @override
   State<NoteDetailPage> createState() => _NoteDetailPageState();
@@ -44,39 +53,45 @@ class _NoteDetailPageState extends State<NoteDetailPage> {
     final text = _ctrl.text.trim();
     // Eğer metin boşsa, kaydetme işlemini yapmadan çıkıyoruz.
     if (text.isEmpty) return;
+
+    // ✅ Çeviri metinlerine erişim.
+    final t = AppTexts.values[widget.lang]!;
+
     try {
       // NotesService üzerinden notu güncelliyoruz.
       await NotesService.updateNote(id: widget.noteId, text: text);
-      // Widget hala ekranda değilse (unmounted), işlem yapmadan dönüyoruz.
-      // Bu, asenkron işlemler sırasında oluşabilecek hataları engeller.
+      // Widget hala ekranda değilse, işlem yapmadan dönüyoruz.
       if (!mounted) return;
       // Başarılı bir şekilde kaydedilince kullanıcıya "Kaydedildi" mesajını gösteriyoruz.
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Kaydedildi')));
+      ).showSnackBar(SnackBar(content: Text(t['saved']!)));
     } catch (e) {
       // Kaydetme işlemi sırasında bir hata oluşursa, kullanıcıya bir mesaj gösteriyoruz.
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Kaydedilemedi: $e')));
+      ).showSnackBar(SnackBar(content: Text('${t['saveFailed']!}: $e')));
     }
   }
 
   // Sayfanın kullanıcı arayüzünü (UI) oluşturan metot.
   @override
   Widget build(BuildContext context) {
+    // ✅ Çeviri metinlerine erişim.
+    final t = AppTexts.values[widget.lang]!;
+
     return Scaffold(
       // Sayfanın üst kısmındaki uygulama çubuğu (app bar).
       appBar: AppBar(
-        // Başlık metni.
-        title: const Text('Not Detayı'),
+        // ✅ Başlık metni çeviriden alınıyor.
+        title: Text(t['noteDetail']!),
         // Uygulama çubuğundaki eylemler (sağdaki butonlar).
         actions: [
           // Kaydetme butonu.
           IconButton(
-            // Butonun üzerine gelince çıkan açıklama metni.
-            tooltip: 'Kaydet',
+            // ✅ Butonun üzerine gelince çıkan açıklama metni çeviriden alınıyor.
+            tooltip: t['save']!,
             // Butonun ikonu.
             icon: const Icon(Icons.save),
             // Butona basıldığında _save metodu çalıştırılır.
@@ -96,11 +111,11 @@ class _NoteDetailPageState extends State<NoteDetailPage> {
           // Çok satırlı metin girişi için klavye türünü ayarlıyoruz.
           keyboardType: TextInputType.multiline,
           // Metin alanının görünüm ayarları.
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             // Metin alanına dış çerçeve ekliyoruz.
-            border: OutlineInputBorder(),
-            // Kullanıcıya rehberlik eden ipucu metni.
-            hintText: 'Notunuzu yazın…',
+            border: const OutlineInputBorder(),
+            // ✅ Kullanıcıya rehberlik eden ipucu metni çeviriden alınıyor.
+            hintText: t['noteHint']!,
           ),
         ),
       ),

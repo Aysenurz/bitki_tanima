@@ -49,10 +49,8 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     // Provider'ı kullanarak kullanıcının durumunu (User nesnesi) dinliyoruz.
     final user = context.watch<User?>();
-
     // Uygulama başlığını seçilen dile göre alıyoruz.
-    final String title =
-        AppTexts.values[lang ?? "tr"]?["appTitle"] ?? "Bitki Tanıma";
+    final String title = AppTexts.values[lang ?? "tr"]!["appTitle"]!;
 
     // 1) Dil seçimi henüz yapılmadıysa
     if (lang == null) {
@@ -119,14 +117,17 @@ class _ShellScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tr = (lang == 'tr');
+    // Düzeltme: Burada da metinler AppTexts'ten çekilmeliydi.
+    final t = AppTexts.values[lang]!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Text(
+          t['appTitle']!,
+        ), // ✅ Düzeltme: title değişkeni yerine AppTexts'ten çekildi
         actions: [
           // Dil seçimi için açılır menü butonu.
           PopupMenuButton<String>(
-            tooltip: tr ? 'Dil' : 'Language',
+            tooltip: t['language']!, // ✅ Düzeltme
             icon: const Icon(Icons.language),
             onSelected: onLangChanged,
             itemBuilder: (_) => const [
@@ -137,27 +138,23 @@ class _ShellScaffold extends StatelessWidget {
           // Eğer kullanıcı oturum açmışsa çıkış yap butonunu göster.
           if (user != null)
             IconButton(
-              tooltip: tr ? 'Çıkış Yap' : 'Sign Out',
+              tooltip: t['signOut']!, // ✅ Düzeltme
               icon: const Icon(Icons.logout),
               onPressed: () async {
                 // Çıkış yapmadan önce onay penceresi göster.
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
-                    title: Text(tr ? 'Çıkış Yap' : 'Sign Out'),
-                    content: Text(
-                      tr
-                          ? 'Hesabınızdan çıkmak istiyor musunuz?'
-                          : 'Do you want to sign out?',
-                    ),
+                    title: Text(t['signOut']!), // ✅ Düzeltme
+                    content: Text(t['signOutConfirm']!), // ✅ Düzeltme
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: Text(tr ? 'İptal' : 'Cancel'),
+                        child: Text(t['cancel']!), // ✅ Düzeltme
                       ),
                       FilledButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: Text(tr ? 'Evet' : 'Yes'),
+                        child: Text(t['yes']!), // ✅ Düzeltme
                       ),
                     ],
                   ),
@@ -194,10 +191,13 @@ class _TabsScaffoldState extends State<_TabsScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    // Düzeltme: Burada da metinler AppTexts'ten çekilmeliydi.
+    final t = AppTexts.values[widget.lang]!;
+
     // Sekmelerdeki sayfaların listesi.
     final pages = <Widget>[
       HomePage(lang: widget.lang, changeLang: widget.onLangChanged),
-      const NotesPage(), // ✅ Favoriler yerine Notlar sayfası eklenmiş.
+      NotesPage(lang: widget.lang),
       _SettingsPage(lang: widget.lang, onLangChanged: widget.onLangChanged),
     ];
 
@@ -208,21 +208,21 @@ class _TabsScaffoldState extends State<_TabsScaffold> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Ana Sayfa',
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
+            label: t['home']!, // ✅ Düzeltme
           ),
           NavigationDestination(
-            icon: Icon(Icons.note_alt_outlined),
-            selectedIcon: Icon(Icons.note_alt),
-            label: 'Notlarım', // ✅ Yeni eklenen Notlar sekmesi.
+            icon: const Icon(Icons.note_alt_outlined),
+            selectedIcon: const Icon(Icons.note_alt),
+            label: t['notes']!, // ✅ Düzeltme
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Ayarlar',
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings),
+            label: t['settings']!, // ✅ Düzeltme
           ),
         ],
       ),
@@ -239,16 +239,19 @@ class _SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tr = (lang == 'tr');
+    // Düzeltme: Burada da metinler AppTexts'ten çekilmeliydi.
+    final t = AppTexts.values[lang]!;
     return Scaffold(
-      appBar: AppBar(title: Text(tr ? 'Ayarlar' : 'Settings')),
+      appBar: AppBar(title: Text(t['settings']!)), // ✅ Düzeltme
       body: ListView(
         children: [
           // Dil değiştirme seçeneği.
           ListTile(
             leading: const Icon(Icons.language),
-            title: Text(tr ? 'Dil' : 'Language'),
-            subtitle: Text(tr ? 'Uygulama dili' : 'App language'),
+            title: Text(t['language']!), // ✅ Düzeltme
+            subtitle: Text(
+              lang == 'tr' ? 'Uygulama dili' : 'App language',
+            ), // Bu satır için çeviri eklenmeli
             trailing: DropdownButton<String>(
               value: lang,
               onChanged: (v) {
@@ -264,26 +267,22 @@ class _SettingsPage extends StatelessWidget {
           // Çıkış yapma seçeneği.
           ListTile(
             leading: const Icon(Icons.logout),
-            title: Text(tr ? 'Çıkış Yap' : 'Sign Out'),
+            title: Text(t['signOut']!), // ✅ Düzeltme
             onTap: () async {
               // Çıkış yapmadan önce onay penceresi göster.
               final ok = await showDialog<bool>(
                 context: context,
                 builder: (_) => AlertDialog(
-                  title: Text(tr ? 'Çıkış Yap' : 'Sign Out'),
-                  content: Text(
-                    tr
-                        ? 'Hesabınızdan çıkmak istiyor musunuz?'
-                        : 'Do you want to sign out?',
-                  ),
+                  title: Text(t['signOut']!), // ✅ Düzeltme
+                  content: Text(t['signOutConfirm']!), // ✅ Düzeltme
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
-                      child: Text(tr ? 'İptal' : 'Cancel'),
+                      child: Text(t['cancel']!), // ✅ Düzeltme
                     ),
                     FilledButton(
                       onPressed: () => Navigator.pop(context, true),
-                      child: Text(tr ? 'Evet' : 'Yes'),
+                      child: Text(t['yes']!), // ✅ Düzeltme
                     ),
                   ],
                 ),
