@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 
 # .env içinden anahtar/proje
-PLANTNET_API_KEY = "2b107Q00sDEds4TO3EkVpJTHN"           # ZORUNLU
+PLANTNET_API_KEY = "2b10RsHgDJfKvk36Ey7aV0U0X"           # ZORUNLU
 PLANTNET_PROJECT = os.getenv("PLANTNET_PROJECT", "all")      # genelde "all"
 OPENAI_API_KEY    = os.getenv("OPENAI_API_KEY")              # opsiyonel
 
