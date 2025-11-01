@@ -1,8 +1,13 @@
+<<<<<<< HEAD
+=======
+// lib/ai_service.dart
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
+<<<<<<< HEAD
 /// Yapay zeka (OpenAI) servisleri için bir sınıf.
 /// Bu servis, verilen bitki bilgilerini daha zengin ve anlaşılır hale getirmek için kullanılır.
 class AIService {
@@ -32,18 +37,45 @@ class AIService {
     if (!isEnabled) return null;
 
     // API anahtarını tekrar kontrol eder, çünkü isEnabled kontrolü sırasında boşalmış olabilir.
+=======
+class AIService {
+  // .env okunmadan çalışmasın
+  bool get isEnabled {
+    if (!dotenv.isInitialized) return false;
+    final key = dotenv.env['OPENAI_API_KEY'];
+    return key != null && key.trim().isNotEmpty;
+  }
+
+  Future<Map<String, dynamic>?> enrich({
+    required String lang,
+    required String scientificName,
+    required List<dynamic>? commonNames,
+    required String description,
+    String? family,
+    String? habitat,
+    String? uses,
+  }) async {
+    if (!isEnabled) return null;
+
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
     final apiKey = dotenv.env['OPENAI_API_KEY'];
     if (apiKey == null || apiKey.trim().isEmpty) return null;
 
     try {
+<<<<<<< HEAD
       // Yapay zekaya verilecek "sistem mesajını" dile göre hazırlar.
       // Bu, yapay zekanın hangi rolde konuşacağını belirler.
+=======
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
       final sys = (lang == 'tr')
           ? 'Sen bir botanik asistanısın. Kısa ve anlaşılır yaz.'
           : 'You are a botany assistant. Write short and clear.';
 
+<<<<<<< HEAD
       // Yapay zekaya verilecek "kullanıcı mesajını" hazırlar.
       // Bu mesaj, yapay zekanın işlem yapması için gereken tüm bitki bilgilerini içerir.
+=======
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
       final user =
           'Scientific: $scientificName\n'
           'Common: ${commonNames?.join(", ") ?? "-"}\n'
@@ -54,10 +86,14 @@ class AIService {
           'Return JSON with keys: better_description, care (array of 3), fun_fact. '
           'Language: ${lang == "tr" ? "Turkish" : "English"}';
 
+<<<<<<< HEAD
       // OpenAI API'sinin sohbet tamamlama (chat completions) uç noktasını ayarlar.
       final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
 
       // HTTP POST isteği gönderir.
+=======
+      final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
       final res = await http
           .post(
             uri,
@@ -66,6 +102,7 @@ class AIService {
               'Content-Type': 'application/json',
             },
             body: jsonEncode({
+<<<<<<< HEAD
               'model': 'gpt-4o-mini', // Kullanılacak yapay zeka modeli.
               'temperature':
                   0.7, // Yaratıcılık/rastgelelik seviyesi (0.0 - 2.0).
@@ -82,11 +119,25 @@ class AIService {
           ); // İstek için 25 saniye zaman aşımı belirler.
 
       // HTTP yanıt kodunu kontrol eder. 200 (OK) değilse hata mesajını yazdırıp null döner.
+=======
+              'model': 'gpt-4o-mini',
+              'temperature': 0.7,
+              'messages': [
+                {'role': 'system', 'content': sys},
+                {'role': 'user', 'content': user},
+              ],
+              'response_format': {'type': 'json_object'},
+            }),
+          )
+          .timeout(const Duration(seconds: 25));
+
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
       if (res.statusCode != 200) {
         debugPrint('AI error: ${res.statusCode} ${res.body}');
         return null;
       }
 
+<<<<<<< HEAD
       // Gelen yanıtı JSON olarak ayrıştırır.
       final root = jsonDecode(res.body) as Map<String, dynamic>;
       // Yapay zekanın gönderdiği asıl içeriğe erişir.
@@ -97,6 +148,14 @@ class AIService {
       return parsed; // Ayrıştırılmış veriyi döndürür.
     } catch (e) {
       // Herhangi bir hata oluşursa (ağ hatası, zaman aşımı vb.), hata mesajını yazdırıp null döner.
+=======
+      final root = jsonDecode(res.body) as Map<String, dynamic>;
+      final content =
+          root['choices']?[0]?['message']?['content']?.toString() ?? '{}';
+      final parsed = jsonDecode(content) as Map<String, dynamic>;
+      return parsed;
+    } catch (e) {
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
       debugPrint('AI enrich exception: $e');
       return null;
     }

@@ -66,7 +66,11 @@ flutter:
   uses-material-design: true
   assets:
     - assets/plant_cover.jpg
+<<<<<<< HEAD
     - assets/images/logo.png 
+=======
+    
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

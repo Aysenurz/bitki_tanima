@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Bitki Tanıma Mobil Uygulaması
 Bu proje, kameranızla çektiğiniz veya galerinizden seçtiğiniz bir bitkinin fotoğrafını kullanarak türünü, ailesini ve bakım önerilerini öğrenmenizi sağlayan bir mobil uygulamadır.
 
@@ -59,3 +60,21 @@ flutter run
 
 Ekran Görüntüleri
 [Uygulamanın ana sayfası, bitki tanıma ekranı ve detay sayfası gibi ekran görüntülerine bu bölümde yer verin.]
+=======
+# bitki_tanima_mobile
+
+A new Flutter project.
+
+## Getting Started
+
+This project is a starting point for a Flutter application.
+
+A few resources to get you started if this is your first Flutter project:
+
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af

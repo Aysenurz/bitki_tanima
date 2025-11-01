@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import 'package:flutter/foundation.dart';
 
 /// Uygulamanın çeşitli yapılandırma ayarlarını barındıran sınıf.
@@ -18,5 +19,18 @@ class AppConfig {
     // Bu adres, mobil cihazın aynı Wi-Fi ağına bağlı olması durumunda çalışır.
     // "192.168.1.44" gibi bir adres, yerel ağda bir cihaza erişmek için kullanılır.
     return "http://192.168.1.42";
+=======
+// lib/config.dart
+import 'package:flutter/foundation.dart';
+
+class AppConfig {
+  static String get apiBase {
+    if (kIsWeb) {
+      final host = Uri.base.host.isEmpty ? 'localhost' : Uri.base.host;
+      return 'http://$host:8000';
+    }
+    // PC'nin güncel IP'si:
+    return "http://192.168.1.44";
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
   }
 }

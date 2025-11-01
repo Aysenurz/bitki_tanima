@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // .env dosyasından çevresel değişkenleri okumak için
 import 'package:firebase_core/firebase_core.dart'; // Firebase çekirdek kütüphanesi
@@ -28,5 +29,28 @@ Future<void> main() async {
 
   // Uygulamanın ana widget'ını (MyRoot) çalıştırır ve
   // ekranın widget ağacını oluşturmasını sağlar.
+=======
+// lib/main.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+import 'firebase_options.dart'; // flutterfire configure ile oluşur
+import 'src/app.dart'; // MyRoot + MyApp burada
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // .env (opsiyonel)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("Error loading .env: $e");
+  }
+
+  // Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
   runApp(const MyRoot());
 }

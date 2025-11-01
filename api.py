@@ -1,8 +1,17 @@
+<<<<<<< HEAD
 
+=======
+# api.py
+# -----------------------------------------------------------
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
 # FastAPI tabanlı tek dosya backend:
 # - /diag   : .env okundu mu? hedef URL ne? hızlı teşhis
 # - /predict: resmi Pl@ntNet'e yollar, sonucu sadeleştirir,
 #             (varsa) OpenAI ile açıklama/bakım notu ekler.
+<<<<<<< HEAD
+=======
+# -----------------------------------------------------------
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
 
 import os, json, re, requests
 from typing import Dict, Any, List, Optional
@@ -11,6 +20,10 @@ from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+<<<<<<< HEAD
+=======
+# ⬇⬇⬇  YENİ: .env'yi bu dosyayla AYNI klasörden, ezerek yükle
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
 from pathlib import Path
 from dotenv import load_dotenv
 #ENV_PATH = Path(__file__).with_name(".env")
@@ -19,7 +32,11 @@ from dotenv import load_dotenv
 
 
 # .env içinden anahtar/proje
+<<<<<<< HEAD
 PLANTNET_API_KEY = "2b10RsHgDJfKvk36Ey7aV0U0X"           # ZORUNLU
+=======
+PLANTNET_API_KEY = "2b107Q00sDEds4TO3EkVpJTHN"           # ZORUNLU
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
 PLANTNET_PROJECT = os.getenv("PLANTNET_PROJECT", "all")      # genelde "all"
 OPENAI_API_KEY    = os.getenv("OPENAI_API_KEY")              # opsiyonel
 

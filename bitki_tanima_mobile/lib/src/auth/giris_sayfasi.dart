@@ -58,6 +58,7 @@ class _GirisSayfasiState extends State<GirisSayfasi> {
               : (tr ? 'Giriş Yap' : 'Sign In'),
         ),
       ),
+<<<<<<< HEAD
       // Sayfanın içeriğini kaydırılabilir yapmak için SingleChildScrollView eklendi.
       body: SingleChildScrollView(
         child: Center(
@@ -141,6 +142,76 @@ class _GirisSayfasiState extends State<GirisSayfasi> {
                     ),
                   ],
                 ),
+=======
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _form,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: tr ? 'E-posta' : 'Email',
+                      prefixIcon: const Icon(Icons.email),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty)
+                        ? (tr ? 'Zorunlu' : 'Required')
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _sifre,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: tr ? 'Şifre' : 'Password',
+                      prefixIcon: const Icon(Icons.lock),
+                    ),
+                    validator: (v) => (v == null || v.length < 6)
+                        ? (tr ? 'En az 6 karakter' : 'Min 6 chars')
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _loading ? null : _submit,
+                      child: _loading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              _kayitModu
+                                  ? (tr ? 'Kayıt Ol' : 'Sign Up')
+                                  : (tr ? 'Giriş Yap' : 'Sign In'),
+                            ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () {
+                            setState(() => _kayitModu = !_kayitModu);
+                          },
+                    child: Text(
+                      _kayitModu
+                          ? (tr
+                                ? 'Hesabın var mı? Giriş Yap'
+                                : 'Already have an account? Sign In')
+                          : (tr
+                                ? 'Hesabın yok mu? Kayıt Ol'
+                                : 'No account? Sign Up'),
+                    ),
+                  ),
+                ],
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
               ),
             ),
           ),

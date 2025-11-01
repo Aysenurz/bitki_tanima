@@ -1,15 +1,23 @@
+<<<<<<< HEAD
 import 'package:flutter/material.dart';
 
 /// Kullanıcıdan dil seçimi yapmasını isteyen ve bir kez seçim yapıldıktan sonra
 /// bu bilgiyi üst widget'a (ebeveyne) ileten bir StatelessWidget.
 class LanguageSelectionPage extends StatelessWidget {
   /// Dil seçimi yapıldığında çağrılacak olan geri çağırım (callback) fonksiyonu.
+=======
+// lib/language_selection_page.dart
+import 'package:flutter/material.dart';
+
+class LanguageSelectionPage extends StatelessWidget {
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
   final void Function(String) onLangSelected;
   const LanguageSelectionPage({super.key, required this.onLangSelected});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
       // Arka plan rengini hafif yeşil yapar.
       backgroundColor: Colors.green.shade50,
       body: Center(
@@ -24,22 +32,41 @@ class LanguageSelectionPage extends StatelessWidget {
               const Icon(Icons.language, size: 100, color: Colors.green),
               const SizedBox(height: 20),
               // Kullanıcıya dil seçmesini söyleyen metin.
+=======
+      backgroundColor: Colors.green.shade50,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.language, size: 100, color: Colors.green),
+              const SizedBox(height: 20),
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
               const Text(
                 "Lütfen Dil Seçiniz\nPlease Select Language",
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 32),
+<<<<<<< HEAD
               // Türkçe dilini seçmek için dolu (Filled) bir buton.
               FilledButton(
                 // Butona tıklandığında, geri çağırım fonksiyonuna 'tr' dil kodunu gönderir.
+=======
+              FilledButton(
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
                 onPressed: () => onLangSelected("tr"),
                 child: const Text("🇹🇷 Türkçe"),
               ),
               const SizedBox(height: 12),
+<<<<<<< HEAD
               // İngilizce dilini seçmek için tonlu (Tonal) bir buton.
               FilledButton.tonal(
                 // Butona tıklandığında, geri çağırım fonksiyonuna 'en' dil kodunu gönderir.
+=======
+              FilledButton.tonal(
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
                 onPressed: () => onLangSelected("en"),
                 child: const Text("🇬🇧 English"),
               ),

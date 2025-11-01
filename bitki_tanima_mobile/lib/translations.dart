@@ -6,6 +6,7 @@ class AppTexts {
       "welcome": "🌱 Bitki Tanıma Uygulamasına Hoş Geldiniz",
       "intro":
           "Bu uygulama sayesinde bitki fotoğrafı yükleyerek onun türünü öğrenebilirsiniz. "
+<<<<<<< HEAD
           "Galeri veya kamera ile bir fotoğraf seçin, ardından sonucu inceleyin.",
       "selectGallery": "📷 Galeriden Resim Seç",
       "takePhoto": "📸 Fotoğraf Çek",
@@ -42,6 +43,13 @@ class AppTexts {
       "saved": "Kaydedildi",
       "saveFailed": "Kaydedilemedi",
       "noteHint": "Notunuzu yazın…",
+=======
+              "Galeri veya kamera ile bir fotoğraf seçin, ardından sonucu inceleyin.",
+      "selectGallery": "📷 Galeriden Resim Seç",
+      "takePhoto": "📸 Fotoğraf Çek",
+      "settings": "⚙️ Ayarlar",
+      "language": "Dil",
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
 
       // Sonuç ekranı alan başlıkları
       "scientificName": "Bilimsel Adı",
@@ -58,7 +66,11 @@ class AppTexts {
       "powo": "POWO",
 
       // Hata mesajları
+<<<<<<< HEAD
       "errorNoLink": "Bağlantı açılamadı",
+=======
+      "errorNoLink": "Bağlantı açılamadı"
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
     },
     "en": {
       // General
@@ -66,6 +78,7 @@ class AppTexts {
       "welcome": "🌱 Welcome to the Plant Identification App",
       "intro":
           "With this app, you can upload a plant photo to identify its species. "
+<<<<<<< HEAD
           "Choose a photo from gallery or take one with your camera, then view the results.",
       "selectGallery": "📷 Select from Gallery",
       "takePhoto": "📸 Take a Photo",
@@ -102,6 +115,13 @@ class AppTexts {
       "saved": "Saved",
       "saveFailed": "Could not save",
       "noteHint": "Write your note…",
+=======
+              "Choose a photo from gallery or take one with your camera, then view the results.",
+      "selectGallery": "📷 Select from Gallery",
+      "takePhoto": "📸 Take a Photo",
+      "settings": "⚙️ Settings",
+      "language": "Language",
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
 
       // Result screen field titles
       "scientificName": "Scientific Name",
@@ -117,8 +137,14 @@ class AppTexts {
       "wikipedia": "Wikipedia",
       "powo": "POWO",
 
+<<<<<<< HEAD
       // Hata mesajları
       "errorNoLink": "Could not open link",
     },
+=======
+      // Error messages
+      "errorNoLink": "Could not open link"
+    }
+>>>>>>> a1356e7c0c904980dfe566ba55b797e08e83b8af
   };
 }
